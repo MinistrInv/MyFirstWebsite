@@ -1,26 +1,43 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel
+from typing import List
 
 app = FastAPI()
 
-@app.get("/")
-def read_root():
-    return {"message": "Привет, Хантатон!"}
-
-@app.get("/users/{user_id}")
-def get_user(user_id: int):
-    return {"user_id": user_id, "name": f"Пользователь {user_id}"}
-
-@app.get("/search")
-def search(q: str = "", limit: int = 10):
-    return {"query": q, "limit": limit}
 
 class Task(BaseModel):
     title: str
-    dicription: str = ""
+    description: str = "" 
     completed: bool = False
 
-@app.post("/tasks")
-def create_task(task: Task):
-    return {"message": "Задача создана", "task": task}
+tasks_db: List[Task] = []
+next_id = 1
 
+@app.get("/tasks", response_model=List[Task])
+def get_tasks():
+    return tasks_db
+
+@app.get("/tasks/{task_id}", response_model=Task)
+def get_task(task_id: int):
+    if task_id < 1 or len(tasks_db) < tasks_db:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return tasks_db[task_id - 1]
+
+@app.post("/tasks", status_code=status.HTTP_201_CREATED, response_model=Task)
+def create_task(task:Task):
+    tasks_db.append(task)
+    return task
+
+@app.put("/tasks/{task_id}", response_model=Task)
+def update_task(task_id: int, updated_task: Task):
+    if task_id < 1 or len(tasks_db) < task_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    tasks_db[task_id - 1] = update_task
+    return update_task
+
+@app.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_task(task_id: int):
+    if 1 < task_id or len(tasks_db) < task_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    tasks_db.pop(task_id - 1)
+    return None
